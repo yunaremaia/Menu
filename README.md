@@ -62,6 +62,7 @@ Nenhuma solução open source madura atende especificamente o nicho de cardápio
 - [x] **Geração de QR Code** — Serviço standalone e endpoint REST para gerar QR Codes PNG por mesa, prontos para impressão
 - [x] **Interface web do cardápio** — Página HTML responsiva que exibe o cardápio com categorias, itens, preços, fotos e tags; acessível via `/cardapio/{id}?mesa={id}`
 - [x] **Upload de imagens** — Serviço de armazenamento local e endpoint REST para upload de fotos dos itens (PNG, JPG, GIF, WebP) com substituição automática
+- [x] **Exportação e importação** — Exporte cardápios completos (com categorias, itens e mesas) em JSON e importe de volta
 
 ### Interface web do cardápio
 
@@ -78,6 +79,8 @@ Nenhuma solução open source madura atende especificamente o nicho de cardápio
 | `POST` | `/api/cardapios` | Criar cardápio |
 | `GET` | `/api/cardapios` | Listar cardápios (`?apenas_ativos=true`) |
 | `GET` | `/api/cardapios/{id}` | Obter cardápio |
+| `GET` | `/api/cardapios/{id}/exportar` | Exportar cardápio completo (JSON) |
+| `POST` | `/api/cardapios/importar` | Importar cardápio completo (JSON) |
 | `PUT` | `/api/cardapios/{id}` | Atualizar cardápio |
 | `DELETE` | `/api/cardapios/{id}` | Deletar cardápio |
 
@@ -116,7 +119,7 @@ Nenhuma solução open source madura atende especificamente o nicho de cardápio
 ### Testes
 
 ```bash
-pytest -v           # Todos os testes (137 atualmente)
+pytest -v           # Todos os testes (152 atualmente)
 pytest -k "api"     # Testes de API
 pytest -k "repo"    # Testes de repositório
 pytest -k "modelos" # Testes de modelos
@@ -127,7 +130,7 @@ pytest -k "web"     # Testes da interface web
 ### Próximos passos
 
 - [ ] Painel de administração web
-- [ ] Exportação e importação de cardápios (JSON/CSV)
+- [ ] Cache com Service Worker para modo offline
 - [ ] Cache com Service Worker para modo offline
 - [ ] Suporte a múltiplos idiomas
 
