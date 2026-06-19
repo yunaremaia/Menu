@@ -24,6 +24,7 @@ class Cardapio(BaseModel):
 
 
 class Categoria(BaseModel):
+    id: int | None = None
     nome: NomeNaoVazio
     cardapio_id: int = Field(gt=0)
     ordem: int = Field(default=0, ge=0)
@@ -31,6 +32,7 @@ class Categoria(BaseModel):
 
 
 class Item(BaseModel):
+    id: int | None = None
     nome: NomeNaoVazio
     descricao: str | None = None
     preco: float = Field(ge=0)
@@ -45,6 +47,7 @@ class Item(BaseModel):
 
 
 class Mesa(BaseModel):
+    id: int | None = None
     identificacao: NomeNaoVazio
     cardapio_id: int = Field(gt=0)
     ativo: bool = True

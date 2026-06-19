@@ -1,5 +1,5 @@
 import pytest
-from menu.modelos import Cardapio
+from menu.modelos import Cardapio, Categoria, Item, Mesa
 from menu.repositorio.banco import Banco
 
 
@@ -9,6 +9,18 @@ def banco():
     b.iniciar()
     yield b
     b.fechar()
+
+
+@pytest.fixture
+def cardapio(banco):
+    return banco.criar_cardapio(Cardapio(nome="Cardápio Teste"))
+
+
+@pytest.fixture
+def categoria(banco, cardapio):
+    return banco.criar_categoria(
+        Categoria(nome="Entradas", cardapio_id=cardapio.id, ordem=0)
+    )
 
 
 class TestCardapioRepositorio:
@@ -95,3 +107,182 @@ class TestCardapioRepositorio:
         assert atualizado.nome == "Novo"
         assert atualizado.descricao == "Descrição nova"
         assert atualizado.ativo is True
+
+
+class TestCategoriaRepositorio:
+    def test_criar_categoria(self, banco, cardapio):
+        categoria = Categoria(nome="Bebidas", cardapio_id=cardapio.id)
+        criada = banco.criar_categoria(categoria)
+        assert criada.id == 1
+        assert criada.nome == "Bebidas"
+        assert criada.cardapio_id == cardapio.id
+
+    def test_listar_categorias_por_cardapio(self, banco, cardapio):
+        banco.criar_categoria(Categoria(nome="Entradas", cardapio_id=cardapio.id))
+        banco.criar_categoria(Categoria(nome="Principais", cardapio_id=cardapio.id))
+        categorias = banco.listar_categorias(cardapio.id)
+        assert len(categorias) == 2
+        assert categorias[0].nome == "Entradas"
+
+    def test_listar_categorias_ordem_padrao(self, banco, cardapio):
+        banco.criar_categoria(Categoria(nome="Z", cardapio_id=cardapio.id, ordem=5))
+        banco.criar_categoria(Categoria(nome="A", cardapio_id=cardapio.id, ordem=1))
+        categorias = banco.listar_categorias(cardapio.id)
+        assert categorias[0].nome == "A"
+        assert categorias[1].nome == "Z"
+
+    def test_listar_categorias_outro_cardapio_vazio(self, banco, cardapio):
+        outro_cardapio = banco.criar_cardapio(Cardapio(nome="Outro"))
+        categorias = banco.listar_categorias(outro_cardapio.id)
+        assert categorias == []
+
+    def test_obter_categoria(self, banco, cardapio, categoria):
+        obtida = banco.obter_categoria(categoria.id)
+        assert obtida is not None
+        assert obtida.nome == "Entradas"
+
+    def test_obter_categoria_inexistente(self, banco):
+        assert banco.obter_categoria(999) is None
+
+    def test_atualizar_categoria(self, banco, categoria):
+        atualizada = banco.atualizar_categoria(categoria.id, {"nome": "Sobremesas"})
+        assert atualizada is not None
+        assert atualizada.nome == "Sobremesas"
+
+    def test_atualizar_categoria_inexistente(self, banco):
+        assert banco.atualizar_categoria(999, {"nome": "X"}) is None
+
+    def test_deletar_categoria(self, banco, categoria):
+        assert banco.deletar_categoria(categoria.id) is True
+        assert banco.obter_categoria(categoria.id) is None
+
+    def test_deletar_categoria_inexistente(self, banco):
+        assert banco.deletar_categoria(999) is False
+
+
+class TestItemRepositorio:
+    def test_criar_item(self, banco, categoria):
+        item = Item(nome="Hambúrguer", preco=29.90, categoria_id=categoria.id)
+        criado = banco.criar_item(item)
+        assert criado.id == 1
+        assert criado.nome == "Hambúrguer"
+        assert criado.preco == 29.90
+
+    def test_listar_itens_por_categoria(self, banco, categoria):
+        banco.criar_item(Item(nome="Item A", preco=10, categoria_id=categoria.id))
+        banco.criar_item(Item(nome="Item B", preco=20, categoria_id=categoria.id))
+        itens = banco.listar_itens(categoria.id)
+        assert len(itens) == 2
+
+    def test_listar_itens_ordenados_por_ordem(self, banco, categoria):
+        banco.criar_item(
+            Item(nome="Segundo", preco=10, categoria_id=categoria.id, ordem=2)
+        )
+        banco.criar_item(
+            Item(nome="Primeiro", preco=10, categoria_id=categoria.id, ordem=1)
+        )
+        itens = banco.listar_itens(categoria.id)
+        assert itens[0].nome == "Primeiro"
+        assert itens[1].nome == "Segundo"
+
+    def test_obter_item(self, banco, categoria):
+        criado = banco.criar_item(
+            Item(nome="Pizza", preco=49.90, categoria_id=categoria.id)
+        )
+        obtido = banco.obter_item(criado.id)
+        assert obtido is not None
+        assert obtido.nome == "Pizza"
+
+    def test_obter_item_inexistente(self, banco):
+        assert banco.obter_item(999) is None
+
+    def test_atualizar_item(self, banco, categoria):
+        criado = banco.criar_item(
+            Item(nome="Original", preco=10, categoria_id=categoria.id)
+        )
+        atualizado = banco.atualizar_item(criado.id, {"preco": 15.50})
+        assert atualizado is not None
+        assert atualizado.preco == 15.50
+
+    def test_atualizar_item_inexistente(self, banco):
+        assert banco.atualizar_item(999, {"nome": "X"}) is None
+
+    def test_deletar_item(self, banco, categoria):
+        criado = banco.criar_item(
+            Item(nome="Temp", preco=5, categoria_id=categoria.id)
+        )
+        assert banco.deletar_item(criado.id) is True
+        assert banco.obter_item(criado.id) is None
+
+    def test_deletar_item_inexistente(self, banco):
+        assert banco.deletar_item(999) is False
+
+    def test_listar_apenas_itens_disponiveis(self, banco, categoria):
+        banco.criar_item(
+            Item(nome="Disponível", preco=10, categoria_id=categoria.id)
+        )
+        banco.criar_item(
+            Item(
+                nome="Indisponível",
+                preco=10,
+                categoria_id=categoria.id,
+                disponivel=False,
+            )
+        )
+        disponiveis = banco.listar_itens(categoria.id, apenas_disponiveis=True)
+        assert len(disponiveis) == 1
+        assert disponiveis[0].nome == "Disponível"
+
+
+class TestMesaRepositorio:
+    def test_criar_mesa(self, banco, cardapio):
+        mesa = Mesa(identificacao="Mesa 1", cardapio_id=cardapio.id)
+        criada = banco.criar_mesa(mesa)
+        assert criada.id == 1
+        assert criada.identificacao == "Mesa 1"
+
+    def test_listar_mesas_por_cardapio(self, banco, cardapio):
+        banco.criar_mesa(Mesa(identificacao="Mesa 1", cardapio_id=cardapio.id))
+        banco.criar_mesa(Mesa(identificacao="Mesa 2", cardapio_id=cardapio.id))
+        mesas = banco.listar_mesas(cardapio.id)
+        assert len(mesas) == 2
+
+    def test_obter_mesa(self, banco, cardapio):
+        criada = banco.criar_mesa(
+            Mesa(identificacao="Balcão", cardapio_id=cardapio.id)
+        )
+        obtida = banco.obter_mesa(criada.id)
+        assert obtida is not None
+        assert obtida.identificacao == "Balcão"
+
+    def test_obter_mesa_inexistente(self, banco):
+        assert banco.obter_mesa(999) is None
+
+    def test_atualizar_mesa(self, banco, cardapio):
+        criada = banco.criar_mesa(
+            Mesa(identificacao="Mesa 1", cardapio_id=cardapio.id)
+        )
+        atualizada = banco.atualizar_mesa(criada.id, {"identificacao": "Mesa 1A"})
+        assert atualizada is not None
+        assert atualizada.identificacao == "Mesa 1A"
+
+    def test_atualizar_mesa_inexistente(self, banco):
+        assert banco.atualizar_mesa(999, {"identificacao": "X"}) is None
+
+    def test_deletar_mesa(self, banco, cardapio):
+        criada = banco.criar_mesa(
+            Mesa(identificacao="Temp", cardapio_id=cardapio.id)
+        )
+        assert banco.deletar_mesa(criada.id) is True
+        assert banco.obter_mesa(criada.id) is None
+
+    def test_deletar_mesa_inexistente(self, banco):
+        assert banco.deletar_mesa(999) is False
+
+    def test_listar_apenas_mesas_ativas(self, banco, cardapio):
+        banco.criar_mesa(Mesa(identificacao="Mesa Ativa", cardapio_id=cardapio.id))
+        banco.criar_mesa(
+            Mesa(identificacao="Mesa Inativa", cardapio_id=cardapio.id, ativo=False)
+        )
+        ativas = banco.listar_mesas(cardapio.id, apenas_ativas=True)
+        assert len(ativas) == 1

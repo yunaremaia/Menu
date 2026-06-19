@@ -52,6 +52,76 @@ Nenhuma solução open source madura atende especificamente o nicho de cardápio
 
 ---
 
+## Status do desenvolvimento
+
+### Implementado
+
+- [x] **Modelos de domínio** — Cardapio, Categoria, Item e Mesa com validação Pydantic (nomes não vazios, preços não negativos, timezone-aware)
+- [x] **Repositório SQLite** — CRUD completo para cardápios, categorias, itens e mesas com suporte a filtros (ativos, disponíveis) e ordenação
+- [x] **API REST** — 25 endpoints que expõem toda a funcionalidade via HTTP com FastAPI e documentação automática (Swagger UI em `/docs`)
+
+### API REST
+
+#### Cardápios
+
+| Método | Rota | Descrição |
+|---|---|---|
+| `POST` | `/api/cardapios` | Criar cardápio |
+| `GET` | `/api/cardapios` | Listar cardápios (`?apenas_ativos=true`) |
+| `GET` | `/api/cardapios/{id}` | Obter cardápio |
+| `PUT` | `/api/cardapios/{id}` | Atualizar cardápio |
+| `DELETE` | `/api/cardapios/{id}` | Deletar cardápio |
+
+#### Categorias
+
+| Método | Rota | Descrição |
+|---|---|---|
+| `POST` | `/api/categorias` | Criar categoria |
+| `GET` | `/api/cardapios/{id}/categorias` | Listar categorias de um cardápio |
+| `GET` | `/api/categorias/{id}` | Obter categoria |
+| `PUT` | `/api/categorias/{id}` | Atualizar categoria |
+| `DELETE` | `/api/categorias/{id}` | Deletar categoria |
+
+#### Itens
+
+| Método | Rota | Descrição |
+|---|---|---|
+| `POST` | `/api/itens` | Criar item |
+| `GET` | `/api/categorias/{id}/itens` | Listar itens de uma categoria (`?apenas_disponiveis=true`) |
+| `GET` | `/api/itens/{id}` | Obter item |
+| `PUT` | `/api/itens/{id}` | Atualizar item |
+| `DELETE` | `/api/itens/{id}` | Deletar item |
+
+#### Mesas
+
+| Método | Rota | Descrição |
+|---|---|---|
+| `POST` | `/api/mesas` | Criar mesa |
+| `GET` | `/api/cardapios/{id}/mesas` | Listar mesas de um cardápio (`?apenas_ativas=true`) |
+| `GET` | `/api/mesas/{id}` | Obter mesa |
+| `PUT` | `/api/mesas/{id}` | Atualizar mesa |
+| `DELETE` | `/api/mesas/{id}` | Deletar mesa |
+
+### Testes
+
+```bash
+pytest -v           # Todos os testes (109 atualmente)
+pytest -k "api"     # Testes de API
+pytest -k "repo"    # Testes de repositório
+pytest -k "modelos" # Testes de modelos
+```
+
+### Próximos passos
+
+- [ ] Geração de QR Code por mesa
+- [ ] Interface web do cardápio público (HTML + CSS + JS vanilla)
+- [ ] Painel de administração web
+- [ ] Upload de imagens dos itens
+- [ ] Cache com Service Worker para modo offline
+- [ ] Suporte a múltiplos idiomas
+
+---
+
 ## Público-alvo
 
 - **Restaurantes, bares e cafeterias** de pequeno e médio porte que querem modernizar o cardápio sem pagar assinatura mensal.
