@@ -60,7 +60,8 @@ Nenhuma solução open source madura atende especificamente o nicho de cardápio
 - [x] **Repositório SQLite** — CRUD completo para cardápios, categorias, itens e mesas com suporte a filtros (ativos, disponíveis) e ordenação
 - [x] **API REST** — 27 endpoints que expõem toda a funcionalidade via HTTP com FastAPI e documentação automática (Swagger UI em `/docs`)
 - [x] **Geração de QR Code** — Serviço standalone e endpoint REST para gerar QR Codes PNG por mesa, prontos para impressão
-- [x] **Interface web do cardápio** — Página HTML responsiva que exibe o cardápio com categorias, itens, preços e tags; acessível via `/cardapio/{id}?mesa={id}`
+- [x] **Interface web do cardápio** — Página HTML responsiva que exibe o cardápio com categorias, itens, preços, fotos e tags; acessível via `/cardapio/{id}?mesa={id}`
+- [x] **Upload de imagens** — Serviço de armazenamento local e endpoint REST para upload de fotos dos itens (PNG, JPG, GIF, WebP) com substituição automática
 
 ### Interface web do cardápio
 
@@ -98,6 +99,7 @@ Nenhuma solução open source madura atende especificamente o nicho de cardápio
 | `GET` | `/api/categorias/{id}/itens` | Listar itens de uma categoria (`?apenas_disponiveis=true`) |
 | `GET` | `/api/itens/{id}` | Obter item |
 | `PUT` | `/api/itens/{id}` | Atualizar item |
+| `POST` | `/api/itens/{id}/foto` | Upload de foto do item (multipart) |
 | `DELETE` | `/api/itens/{id}` | Deletar item |
 
 #### Mesas
@@ -114,7 +116,7 @@ Nenhuma solução open source madura atende especificamente o nicho de cardápio
 ### Testes
 
 ```bash
-pytest -v           # Todos os testes (130 atualmente)
+pytest -v           # Todos os testes (137 atualmente)
 pytest -k "api"     # Testes de API
 pytest -k "repo"    # Testes de repositório
 pytest -k "modelos" # Testes de modelos
@@ -125,7 +127,7 @@ pytest -k "web"     # Testes da interface web
 ### Próximos passos
 
 - [ ] Painel de administração web
-- [ ] Upload de imagens dos itens
+- [ ] Exportação e importação de cardápios (JSON/CSV)
 - [ ] Cache com Service Worker para modo offline
 - [ ] Suporte a múltiplos idiomas
 

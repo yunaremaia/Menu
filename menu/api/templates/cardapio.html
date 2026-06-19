@@ -42,6 +42,16 @@
     background: #edf2f7; color: #4a5568; margin-right: 0.25rem;
     text-transform: uppercase; letter-spacing: 0.03em;
   }
+  .item-wrapper {
+    display: flex; gap: 0.75rem; align-items: flex-start;
+    padding: 0.75rem 0; border-bottom: 1px solid #edf2f7;
+  }
+  .item-wrapper:last-child { border-bottom: none; }
+  .item-foto {
+    width: 72px; height: 72px; border-radius: 8px; object-fit: cover;
+    flex-shrink: 0; background: #e2e8f0;
+  }
+  .item { flex: 1; padding: 0; border: none; }
   .item-preco {
     font-size: 1rem; font-weight: 700; color: #2d3748;
     white-space: nowrap; margin-left: 1rem;
@@ -68,21 +78,26 @@
       <div class="categoria">
         <h2>{{ categoria.nome }}</h2>
         {% for item in categoria.itens %}
-          <div class="item">
-            <div class="item-info">
-              <div class="item-nome">{{ item.nome }}</div>
-              {% if item.descricao %}
-                <div class="item-descricao">{{ item.descricao }}</div>
-              {% endif %}
-              {% if item.tags %}
-                <div class="item-tags">
-                  {% for tag in item.tags.split(',') %}
-                    <span class="tag">{{ tag.strip() }}</span>
-                  {% endfor %}
-                </div>
-              {% endif %}
+          <div class="item-wrapper">
+            {% if item.foto_url %}
+              <img class="item-foto" src="{{ item.foto_url }}" alt="{{ item.nome }}" loading="lazy">
+            {% endif %}
+            <div class="item">
+              <div class="item-info">
+                <div class="item-nome">{{ item.nome }}</div>
+                {% if item.descricao %}
+                  <div class="item-descricao">{{ item.descricao }}</div>
+                {% endif %}
+                {% if item.tags %}
+                  <div class="item-tags">
+                    {% for tag in item.tags.split(',') %}
+                      <span class="tag">{{ tag.strip() }}</span>
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              <div class="item-preco">R$ {{ "%.2f"|format(item.preco) }}</div>
             </div>
-            <div class="item-preco">R$ {{ "%.2f"|format(item.preco) }}</div>
           </div>
         {% endfor %}
       </div>

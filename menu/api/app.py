@@ -1,11 +1,12 @@
 from datetime import datetime, timezone
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse, Response
+from fastapi import FastAPI, HTTPException, UploadFile
+from fastapi.responses import FileResponse, HTMLResponse, Response
 from jinja2 import Environment, FileSystemLoader
 from pydantic import BaseModel, Field
 
+from menu.armazenamento.local import ArmazenamentoLocal
 from menu.modelos import Cardapio, Categoria, Item, Mesa
 from menu.qrcode.gerador import gerar_qrcode
 from menu.repositorio.banco import Banco
@@ -105,9 +106,17 @@ class MesaResponse(BaseModel):
     criado_em: datetime
 
 
-def criar_app(caminho_banco: str = "menu.db", base_url: str = "") -> FastAPI:
+def criar_app(
+    caminho_banco: str = "menu.db",
+    base_url: str = "",
+    armazenamento_dir: str = "",
+) -> FastAPI:
     banco = Banco(caminho_banco)
     banco.iniciar()
+
+    if not armazenamento_dir:
+        armazenamento_dir = str(Path.cwd() / "uploads")
+    storage = ArmazenamentoLocal(armazenamento_dir)
 
     templates_dir = Path(__file__).parent / "templates"
     templates = Environment(loader=FileSystemLoader(str(templates_dir)))
@@ -237,6 +246,37 @@ def criar_app(caminho_banco: str = "menu.db", base_url: str = "") -> FastAPI:
     def deletar_item(item_id: int):
         if not banco.deletar_item(item_id):
             raise HTTPException(status_code=404, detail="Item não encontrado")
+
+    @app.post("/api/itens/{item_id}/foto")
+    def upload_foto(item_id: int, arquivo: UploadFile):
+        item = banco.obter_item(item_id)
+        if not item:
+            raise HTTPException(status_code=404, detail="Item não encontrado")
+
+        extensao = Path(arquivo.filename or "").suffix.lower()
+        if extensao not in {".png", ".jpg", ".jpeg", ".gif", ".webp"}:
+            raise HTTPException(
+                status_code=400,
+                detail="Formato não permitido. Use PNG, JPG, GIF ou WebP.",
+            )
+
+        if item.foto_url:
+            try:
+                storage.remover(item.foto_url)
+            except Exception:
+                pass
+
+        dados = arquivo.file.read()
+        url = storage.salvar(dados, extensao)
+        banco.atualizar_item(item_id, {"foto_url": url})
+        return {"foto_url": url}
+
+    @app.get("/arquivos/{nome_arquivo}")
+    def servir_arquivo(nome_arquivo: str):
+        caminho = storage.obter_caminho(nome_arquivo)
+        if not caminho:
+            raise HTTPException(status_code=404, detail="Arquivo não encontrado")
+        return FileResponse(str(caminho))
 
     @app.post("/api/mesas", response_model=MesaResponse, status_code=201)
     def criar_mesa(dados: MesaCriar):
