@@ -58,8 +58,15 @@ Nenhuma solução open source madura atende especificamente o nicho de cardápio
 
 - [x] **Modelos de domínio** — Cardapio, Categoria, Item e Mesa com validação Pydantic (nomes não vazios, preços não negativos, timezone-aware)
 - [x] **Repositório SQLite** — CRUD completo para cardápios, categorias, itens e mesas com suporte a filtros (ativos, disponíveis) e ordenação
-- [x] **API REST** — 26 endpoints que expõem toda a funcionalidade via HTTP com FastAPI e documentação automática (Swagger UI em `/docs`)
+- [x] **API REST** — 27 endpoints que expõem toda a funcionalidade via HTTP com FastAPI e documentação automática (Swagger UI em `/docs`)
 - [x] **Geração de QR Code** — Serviço standalone e endpoint REST para gerar QR Codes PNG por mesa, prontos para impressão
+- [x] **Interface web do cardápio** — Página HTML responsiva que exibe o cardápio com categorias, itens, preços e tags; acessível via `/cardapio/{id}?mesa={id}`
+
+### Interface web do cardápio
+
+| Método | Rota | Descrição |
+|---|---|---|
+| `GET` | `/cardapio/{id}` | Página pública do cardápio (`?mesa={id}` opcional) |
 
 ### API REST
 
@@ -107,17 +114,16 @@ Nenhuma solução open source madura atende especificamente o nicho de cardápio
 ### Testes
 
 ```bash
-pytest -v           # Todos os testes (121 atualmente)
+pytest -v           # Todos os testes (130 atualmente)
 pytest -k "api"     # Testes de API
 pytest -k "repo"    # Testes de repositório
 pytest -k "modelos" # Testes de modelos
 pytest -k "qrcode"  # Testes de QR Code (serviço + API)
+pytest -k "web"     # Testes da interface web
 ```
 
 ### Próximos passos
 
-- [ ] Interface web do cardápio público (HTML + CSS + JS vanilla)
-- [ ] Interface web do cardápio público (HTML + CSS + JS vanilla)
 - [ ] Painel de administração web
 - [ ] Upload de imagens dos itens
 - [ ] Cache com Service Worker para modo offline

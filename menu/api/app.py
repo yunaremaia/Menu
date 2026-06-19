@@ -1,9 +1,10 @@
 from datetime import datetime, timezone
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import HTMLResponse, Response
+from jinja2 import Environment, FileSystemLoader
 from pydantic import BaseModel, Field
-
-from fastapi.responses import Response
 
 from menu.modelos import Cardapio, Categoria, Item, Mesa
 from menu.qrcode.gerador import gerar_qrcode
@@ -107,6 +108,9 @@ class MesaResponse(BaseModel):
 def criar_app(caminho_banco: str = "menu.db", base_url: str = "") -> FastAPI:
     banco = Banco(caminho_banco)
     banco.iniciar()
+
+    templates_dir = Path(__file__).parent / "templates"
+    templates = Environment(loader=FileSystemLoader(str(templates_dir)))
 
     app = FastAPI(title="Menu", version="0.1.0")
 
@@ -273,6 +277,35 @@ def criar_app(caminho_banco: str = "menu.db", base_url: str = "") -> FastAPI:
     def deletar_mesa(mesa_id: int):
         if not banco.deletar_mesa(mesa_id):
             raise HTTPException(status_code=404, detail="Mesa não encontrada")
+
+    @app.get("/cardapio/{cardapio_id}", response_class=HTMLResponse)
+    def exibir_cardapio(cardapio_id: int, mesa: int | None = None):
+        cardapio = banco.obter_cardapio(cardapio_id)
+        if not cardapio:
+            raise HTTPException(status_code=404, detail="Cardápio não encontrado")
+
+        categorias = banco.listar_categorias(cardapio_id)
+        dados_categorias = []
+        for cat in categorias:
+            itens = banco.listar_itens(cat.id, apenas_disponiveis=True)
+            dados_categorias.append({
+                "nome": cat.nome,
+                "ordem": cat.ordem,
+                "itens": itens,
+            })
+
+        dados_mesa = None
+        if mesa:
+            m = banco.obter_mesa(mesa)
+            if m and m.cardapio_id == cardapio_id:
+                dados_mesa = m
+
+        html = templates.get_template("cardapio.html").render(
+            cardapio=cardapio,
+            categorias=dados_categorias,
+            mesa=dados_mesa,
+        )
+        return HTMLResponse(content=html)
 
     @app.get("/api/mesas/{mesa_id}/qrcode")
     def obter_qrcode_mesa(mesa_id: int):
