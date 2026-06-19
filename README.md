@@ -58,7 +58,8 @@ Nenhuma solução open source madura atende especificamente o nicho de cardápio
 
 - [x] **Modelos de domínio** — Cardapio, Categoria, Item e Mesa com validação Pydantic (nomes não vazios, preços não negativos, timezone-aware)
 - [x] **Repositório SQLite** — CRUD completo para cardápios, categorias, itens e mesas com suporte a filtros (ativos, disponíveis) e ordenação
-- [x] **API REST** — 25 endpoints que expõem toda a funcionalidade via HTTP com FastAPI e documentação automática (Swagger UI em `/docs`)
+- [x] **API REST** — 26 endpoints que expõem toda a funcionalidade via HTTP com FastAPI e documentação automática (Swagger UI em `/docs`)
+- [x] **Geração de QR Code** — Serviço standalone e endpoint REST para gerar QR Codes PNG por mesa, prontos para impressão
 
 ### API REST
 
@@ -101,19 +102,21 @@ Nenhuma solução open source madura atende especificamente o nicho de cardápio
 | `GET` | `/api/mesas/{id}` | Obter mesa |
 | `PUT` | `/api/mesas/{id}` | Atualizar mesa |
 | `DELETE` | `/api/mesas/{id}` | Deletar mesa |
+| `GET` | `/api/mesas/{id}/qrcode` | Obter QR Code da mesa (PNG) |
 
 ### Testes
 
 ```bash
-pytest -v           # Todos os testes (109 atualmente)
+pytest -v           # Todos os testes (121 atualmente)
 pytest -k "api"     # Testes de API
 pytest -k "repo"    # Testes de repositório
 pytest -k "modelos" # Testes de modelos
+pytest -k "qrcode"  # Testes de QR Code (serviço + API)
 ```
 
 ### Próximos passos
 
-- [ ] Geração de QR Code por mesa
+- [ ] Interface web do cardápio público (HTML + CSS + JS vanilla)
 - [ ] Interface web do cardápio público (HTML + CSS + JS vanilla)
 - [ ] Painel de administração web
 - [ ] Upload de imagens dos itens

@@ -3,7 +3,10 @@ from datetime import datetime, timezone
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
+from fastapi.responses import Response
+
 from menu.modelos import Cardapio, Categoria, Item, Mesa
+from menu.qrcode.gerador import gerar_qrcode
 from menu.repositorio.banco import Banco
 
 
@@ -101,7 +104,7 @@ class MesaResponse(BaseModel):
     criado_em: datetime
 
 
-def criar_app(caminho_banco: str = "menu.db") -> FastAPI:
+def criar_app(caminho_banco: str = "menu.db", base_url: str = "") -> FastAPI:
     banco = Banco(caminho_banco)
     banco.iniciar()
 
@@ -270,5 +273,14 @@ def criar_app(caminho_banco: str = "menu.db") -> FastAPI:
     def deletar_mesa(mesa_id: int):
         if not banco.deletar_mesa(mesa_id):
             raise HTTPException(status_code=404, detail="Mesa não encontrada")
+
+    @app.get("/api/mesas/{mesa_id}/qrcode")
+    def obter_qrcode_mesa(mesa_id: int):
+        mesa = banco.obter_mesa(mesa_id)
+        if not mesa:
+            raise HTTPException(status_code=404, detail="Mesa não encontrada")
+        url_destino = f"{base_url}/cardapio/{mesa.cardapio_id}?mesa={mesa_id}"
+        imagem = gerar_qrcode(url_destino)
+        return Response(content=imagem, media_type="image/png")
 
     return app
