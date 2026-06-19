@@ -24,6 +24,9 @@ env/
 # Pytest
 .pytest_cache/
 
+# Uploads de teste
+uploads/
+
 # Sistema
 Thumbs.db
 .DS_Store
