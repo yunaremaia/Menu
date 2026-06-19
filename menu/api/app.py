@@ -4,7 +4,7 @@ from pathlib import Path
 import csv
 import io
 
-from fastapi import FastAPI, HTTPException, UploadFile
+from fastapi import FastAPI, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, Response, PlainTextResponse
 from jinja2 import Environment, FileSystemLoader
 from pydantic import BaseModel, Field
@@ -197,6 +197,12 @@ def criar_app(
     def deletar_cardapio(cardapio_id: int):
         if not banco.deletar_cardapio(cardapio_id):
             raise HTTPException(status_code=404, detail="Cardápio não encontrado")
+
+    @app.get("/api/cardapios/{cardapio_id}/buscar")
+    def buscar_itens(cardapio_id: int, q: str = Query(min_length=1)):
+        if not banco.obter_cardapio(cardapio_id):
+            raise HTTPException(status_code=404, detail="Cardápio não encontrado")
+        return banco.buscar_itens(cardapio_id, q)
 
     @app.get("/api/cardapios/{cardapio_id}/exportar")
     def exportar_cardapio(cardapio_id: int, formato: str | None = None):

@@ -286,3 +286,80 @@ class TestMesaRepositorio:
         )
         ativas = banco.listar_mesas(cardapio.id, apenas_ativas=True)
         assert len(ativas) == 1
+
+
+class TestBuscaRepositorio:
+    def test_buscar_itens_por_nome(self, banco, cardapio, categoria):
+        cat = banco.criar_categoria(
+            Categoria(nome="Bebidas", cardapio_id=cardapio.id, ordem=1)
+        )
+        banco.criar_item(
+            Item(nome="Suco de Laranja", preco=8.0, categoria_id=categoria.id)
+        )
+        banco.criar_item(
+            Item(nome="Café Expresso", preco=5.0, categoria_id=cat.id)
+        )
+        resultados = banco.buscar_itens(cardapio.id, "laranja")
+        assert len(resultados) == 1
+        assert resultados[0]["item"].nome == "Suco de Laranja"
+
+    def test_buscar_itens_por_descricao(self, banco, cardapio, categoria):
+        banco.criar_item(
+            Item(
+                nome="Bruschetta",
+                descricao="Pão italiano com tomate e manjericão",
+                preco=19.90,
+                categoria_id=categoria.id,
+            )
+        )
+        resultados = banco.buscar_itens(cardapio.id, "manjericão")
+        assert len(resultados) == 1
+
+    def test_buscar_itens_por_tag(self, banco, cardapio, categoria):
+        banco.criar_item(
+            Item(
+                nome="Hambúrguer",
+                preco=29.90,
+                tags="vegano, sem gluten",
+                categoria_id=categoria.id,
+            )
+        )
+        resultados = banco.buscar_itens(cardapio.id, "vegano")
+        assert len(resultados) == 1
+
+    def test_buscar_itens_sem_resultado(self, banco, cardapio, categoria):
+        banco.criar_item(
+            Item(nome="Pizza", preco=35.0, categoria_id=categoria.id)
+        )
+        resultados = banco.buscar_itens(cardapio.id, "sushi")
+        assert resultados == []
+
+    def test_buscar_itens_case_insensitive(self, banco, cardapio, categoria):
+        banco.criar_item(
+            Item(nome="Suco de Laranja", preco=8.0, categoria_id=categoria.id)
+        )
+        resultados = banco.buscar_itens(cardapio.id, "LARANJA")
+        assert len(resultados) == 1
+
+    def test_buscar_itens_inclui_categoria(self, banco, cardapio, categoria):
+        banco.criar_item(
+            Item(nome="Bruschetta", preco=19.90, categoria_id=categoria.id)
+        )
+        resultados = banco.buscar_itens(cardapio.id, "bruschetta")
+        assert resultados[0]["categoria"] == "Entradas"
+
+    def test_buscar_itens_apenas_disponiveis(self, banco, cardapio, categoria):
+        banco.criar_item(
+            Item(nome="Item OK", preco=10.0, categoria_id=categoria.id)
+        )
+        banco.criar_item(
+            Item(
+                nome="Item Esgotado",
+                preco=10.0,
+                categoria_id=categoria.id,
+                disponivel=False,
+            )
+        )
+        resultados = banco.buscar_itens(cardapio.id, "Item")
+        assert len(resultados) == 1
+        assert resultados[0]["item"].nome == "Item OK"

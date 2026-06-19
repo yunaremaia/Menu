@@ -101,3 +101,15 @@ class TestCardapioWeb:
             pos_entradas = html.index("Entradas")
             pos_bebidas = html.index("Bebidas")
             assert pos_entradas < pos_bebidas
+
+    def test_pagina_tem_campo_busca(self):
+        for c, cardapio_id in self._cliente_com_dados():
+            html = c.get(f"/cardapio/{cardapio_id}").text
+            assert "busca" in html.lower() or "search" in html.lower()
+            assert "input" in html.lower()
+
+    def test_pagina_tem_js_para_busca(self):
+        for c, cardapio_id in self._cliente_com_dados():
+            html = c.get(f"/cardapio/{cardapio_id}").text
+            assert "<script>" in html
+            assert "function" in html

@@ -389,3 +389,24 @@ class Banco:
         cursor = self._conexao.execute("DELETE FROM mesas WHERE id = ?", (id,))
         self._conexao.commit()
         return cursor.rowcount > 0
+
+    def buscar_itens(
+        self, cardapio_id: int, query: str, apenas_disponiveis: bool = True
+    ) -> list[dict]:
+        termo = f"%{query}%"
+        sql = """
+            SELECT i.*, c.nome AS categoria_nome
+            FROM itens i
+            JOIN categorias c ON i.categoria_id = c.id
+            WHERE c.cardapio_id = ?
+              AND (i.nome LIKE ? OR i.descricao LIKE ? OR i.tags LIKE ?)
+        """
+        params: list = [cardapio_id, termo, termo, termo]
+        if apenas_disponiveis:
+            sql += " AND i.disponivel = 1"
+        sql += " ORDER BY c.ordem, i.ordem, i.id"
+        linhas = self._conexao.execute(sql, params).fetchall()
+        return [
+            {"item": self._linha_para_item(l), "categoria": l["categoria_nome"]}
+            for l in linhas
+        ]

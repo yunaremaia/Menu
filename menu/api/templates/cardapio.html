@@ -22,25 +22,20 @@
     border-radius: 999px; font-size: 0.85rem; font-weight: 600;
   }
   .container { max-width: 720px; margin: 0 auto; padding: 0 1rem; }
+  .busca {
+    margin: 1rem 0; position: relative;
+  }
+  .busca input {
+    width: 100%; padding: 0.75rem 1rem; font-size: 1rem;
+    border: 2px solid #e2e8f0; border-radius: 8px;
+    background: #fff; color: #1a202c; outline: none;
+    transition: border-color 0.2s;
+  }
+  .busca input:focus { border-color: #4a5568; }
   .categoria { margin-top: 1.5rem; }
   .categoria h2 {
     font-size: 1.25rem; font-weight: 700; color: #2d3748;
     padding-bottom: 0.5rem; border-bottom: 2px solid #e2e8f0;
-  }
-  .item {
-    display: flex; justify-content: space-between; align-items: flex-start;
-    padding: 0.75rem 0; border-bottom: 1px solid #edf2f7;
-  }
-  .item:last-child { border-bottom: none; }
-  .item-info { flex: 1; }
-  .item-nome { font-weight: 600; font-size: 1rem; color: #1a202c; }
-  .item-descricao { font-size: 0.85rem; color: #718096; margin-top: 0.125rem; }
-  .item-tags { margin-top: 0.25rem; }
-  .tag {
-    display: inline-block; font-size: 0.7rem; font-weight: 600;
-    padding: 0.1rem 0.5rem; border-radius: 4px;
-    background: #edf2f7; color: #4a5568; margin-right: 0.25rem;
-    text-transform: uppercase; letter-spacing: 0.03em;
   }
   .item-wrapper {
     display: flex; gap: 0.75rem; align-items: flex-start;
@@ -56,6 +51,10 @@
     font-size: 1rem; font-weight: 700; color: #2d3748;
     white-space: nowrap; margin-left: 1rem;
   }
+  .sem-resultado {
+    display: none; text-align: center; color: #a0aec0; padding: 2rem 1rem;
+  }
+  .sem-resultado.visivel { display: block; }
   .vazio {
     text-align: center; color: #a0aec0; padding: 3rem 1rem;
   }
@@ -74,34 +73,47 @@
   </div>
 
   <div class="container">
-    {% for categoria in categorias %}
-      <div class="categoria">
-        <h2>{{ categoria.nome }}</h2>
-        {% for item in categoria.itens %}
-          <div class="item-wrapper">
-            {% if item.foto_url %}
-              <img class="item-foto" src="{{ item.foto_url }}" alt="{{ item.nome }}" loading="lazy">
-            {% endif %}
-            <div class="item">
-              <div class="item-info">
-                <div class="item-nome">{{ item.nome }}</div>
-                {% if item.descricao %}
-                  <div class="item-descricao">{{ item.descricao }}</div>
-                {% endif %}
-                {% if item.tags %}
-                  <div class="item-tags">
-                    {% for tag in item.tags.split(',') %}
-                      <span class="tag">{{ tag.strip() }}</span>
-                    {% endfor %}
-                  </div>
-                {% endif %}
+    <div class="busca">
+      <input type="text" id="input-busca" placeholder="Buscar no cardápio..." autocomplete="off">
+    </div>
+
+    <div id="itens-originais">
+      {% for categoria in categorias %}
+        <div class="categoria" data-categoria="{{ categoria.nome }}">
+          <h2>{{ categoria.nome }}</h2>
+          {% for item in categoria.itens %}
+            <div class="item-wrapper" data-item-id="{{ item.id }}">
+              {% if item.foto_url %}
+                <img class="item-foto" src="{{ item.foto_url }}" alt="{{ item.nome }}" loading="lazy">
+              {% endif %}
+              <div class="item">
+                <div class="item-info">
+                  <div class="item-nome">{{ item.nome }}</div>
+                  {% if item.descricao %}
+                    <div class="item-descricao">{{ item.descricao }}</div>
+                  {% endif %}
+                  {% if item.tags %}
+                    <div class="item-tags">
+                      {% for tag in item.tags.split(',') %}
+                        <span class="tag">{{ tag.strip() }}</span>
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                </div>
+                <div class="item-preco">R$ {{ "%.2f"|format(item.preco) }}</div>
               </div>
-              <div class="item-preco">R$ {{ "%.2f"|format(item.preco) }}</div>
             </div>
-          </div>
-        {% endfor %}
-      </div>
-    {% endfor %}
+          {% endfor %}
+        </div>
+      {% endfor %}
+    </div>
+
+    <div id="resultados-busca" style="display:none"></div>
+
+    <div class="sem-resultado" id="sem-resultado">
+      <h2>Nenhum item encontrado</h2>
+      <p>Tente outro termo de busca.</p>
+    </div>
 
     {% if not categorias %}
       <div class="vazio">
@@ -110,5 +122,84 @@
       </div>
     {% endif %}
   </div>
+
+<script>
+(function() {
+  var input = document.getElementById('input-busca');
+  var originais = document.getElementById('itens-originais');
+  var resultados = document.getElementById('resultados-busca');
+  var semResultado = document.getElementById('sem-resultado');
+  var timer = null;
+  var cardapioId = {{ cardapio.id }};
+
+  function montarItem(dados) {
+    var item = dados.item;
+    var html = '<div class="item-wrapper">';
+    if (item.foto_url) {
+      html += '<img class="item-foto" src="' + item.foto_url + '" alt="' + item.nome + '" loading="lazy">';
+    }
+    html += '<div class="item"><div class="item-info"><div class="item-nome">' + item.nome + '</div>';
+    if (item.descricao) {
+      html += '<div class="item-descricao">' + item.descricao + '</div>';
+    }
+    if (item.tags) {
+      html += '<div class="item-tags">';
+      item.tags.split(',').forEach(function(tag) {
+        html += '<span class="tag">' + tag.trim() + '</span>';
+      });
+      html += '</div>';
+    }
+    html += '</div><div class="item-preco">R$ ' + item.preco.toFixed(2) + '</div></div></div>';
+    return html;
+  }
+
+  function fazerBusca(termo) {
+    if (termo.length < 1) {
+      originais.style.display = '';
+      resultados.style.display = 'none';
+      resultados.innerHTML = '';
+      semResultado.classList.remove('visivel');
+      return;
+    }
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', '/api/cardapios/' + cardapioId + '/buscar?q=' + encodeURIComponent(termo));
+    xhr.onload = function() {
+      if (xhr.status === 200) {
+        var dados = JSON.parse(xhr.responseText);
+        originais.style.display = 'none';
+        resultados.style.display = '';
+
+        if (dados.length === 0) {
+          resultados.innerHTML = '';
+          semResultado.classList.add('visivel');
+          return;
+        }
+
+        semResultado.classList.remove('visivel');
+        var html = '';
+        var currentCat = '';
+        dados.forEach(function(item) {
+          if (item.categoria !== currentCat) {
+            if (currentCat !== '') html += '</div>';
+            currentCat = item.categoria;
+            html += '<div class="categoria"><h2>' + item.categoria + '</h2>';
+          }
+          html += montarItem(item);
+        });
+        html += '</div>';
+        resultados.innerHTML = html;
+      }
+    };
+    xhr.send();
+  }
+
+  input.addEventListener('input', function() {
+    clearTimeout(timer);
+    var termo = input.value.trim();
+    timer = setTimeout(function() { fazerBusca(termo); }, 300);
+  });
+})();
+</script>
 </body>
 </html>
