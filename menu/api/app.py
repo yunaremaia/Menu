@@ -1,8 +1,11 @@
 from datetime import datetime, timezone
 from pathlib import Path
 
+import csv
+import io
+
 from fastapi import FastAPI, HTTPException, UploadFile
-from fastapi.responses import FileResponse, HTMLResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, Response, PlainTextResponse
 from jinja2 import Environment, FileSystemLoader
 from pydantic import BaseModel, Field
 
@@ -196,7 +199,7 @@ def criar_app(
             raise HTTPException(status_code=404, detail="Cardápio não encontrado")
 
     @app.get("/api/cardapios/{cardapio_id}/exportar")
-    def exportar_cardapio(cardapio_id: int):
+    def exportar_cardapio(cardapio_id: int, formato: str | None = None):
         cardapio = banco.obter_cardapio(cardapio_id)
         if not cardapio:
             raise HTTPException(status_code=404, detail="Cardápio não encontrado")
@@ -228,6 +231,33 @@ def criar_app(
             {"identificacao": m.identificacao, "ativo": m.ativo}
             for m in mesas
         ]
+
+        if formato == "csv":
+            saida = io.StringIO()
+            escritor = csv.writer(saida)
+            escritor.writerow(["categoria", "item", "descricao", "preco", "tags", "disponivel"])
+            for cat in dados_categorias:
+                if not cat["itens"]:
+                    escritor.writerow([cat["nome"], "", "", "", "", ""])
+                for item in cat["itens"]:
+                    escritor.writerow([
+                        cat["nome"],
+                        item["nome"],
+                        item["descricao"] or "",
+                        f"{item['preco']:.2f}",
+                        item["tags"],
+                        "sim" if item["disponivel"] else "nao",
+                    ])
+            return PlainTextResponse(
+                content=saida.getvalue(),
+                media_type="text/csv; charset=utf-8",
+                headers={"Content-Disposition": f'attachment; filename="cardapio_{cardapio_id}.csv"'},
+            )
+        elif formato is not None and formato != "json":
+            raise HTTPException(
+                status_code=400,
+                detail=f"Formato não suportado: {formato}. Use 'json' ou 'csv'.",
+            )
 
         return {
             "cardapio": {
